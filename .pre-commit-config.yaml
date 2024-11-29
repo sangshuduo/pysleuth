@@ -1,0 +1,62 @@
+# .pre-commit-config.yaml
+repos:
+  # Standard pre-commit hooks for generic tasks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0  # Use the latest stable version
+    hooks:
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+      - id: end-of-file-fixer
+        name: Ensure files end with a newline
+      - id: check-yaml
+        name: YAML syntax checker
+      - id: check-added-large-files
+        name: Prevent adding large files
+
+  # Local hooks for Rust-specific tools
+  - repo: local
+    hooks:
+      # Rustfmt: Formats Rust code
+      - id: cargo-fmt
+        name: Cargo fmt
+        entry: cargo fmt -- --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Clippy: Lints Rust code
+      - id: cargo-clippy
+        name: Cargo Clippy
+        entry: cargo clippy -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Cargo Check: Checks for compilation errors
+      - id: cargo-check
+        name: Cargo Check
+        entry: cargo check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Cargo Test: Ensures tests compile without running them
+      - id: cargo-test
+        name: Cargo Test
+        entry: cargo test --no-run
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Optional: Cargo Audit for security vulnerabilities
+      - id: cargo-audit
+        name: Cargo Audit
+        entry: cargo audit
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.26.0
+    hooks:
+      - id: typos

@@ -1,0 +1,76 @@
+# .github/workflows/ci.yml
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        rust-version: [stable, beta, nightly]
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Set up Rust toolchain
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          override: true
+          components: rustfmt, clippy
+          target: x86_64-unknown-linux-gnu  # Corrected input parameter
+
+      # 3. Cache Cargo registry
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      # 4. Cache Cargo build
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      # 5. Install Dependencies
+      - name: Install dependencies
+        run: cargo fetch
+
+      # 6. Format Check
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      # 7. Linting with Clippy
+      - name: Run Clippy
+        run: cargo clippy --workspace -- -D warnings
+
+      # 8. Build the workspace
+      - name: Build
+        run: cargo build --workspace --verbose
+
+      # 9. Run Tests
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+      # 10. Optional: Security Audit
+      - name: Install cargo audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit
+        if: matrix.rust-version == 'stable'  # Run only on stable to avoid issues with nightly
+        run: cargo audit
