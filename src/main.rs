@@ -1,4 +1,5 @@
 use anyhow::Result;
+use clap::{Arg, Command};
 use colored::*;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
@@ -7,14 +8,34 @@ use std::fs;
 use tree_sitter::{Node, Parser};
 
 fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <python_file1> [<python_file2> ...]", args[0]);
-        return Ok(());
-    }
+    // Fetch metadata from Cargo.toml using env! macros
+    let name = env!("CARGO_PKG_NAME");
+    let version = env!("CARGO_PKG_VERSION");
+    let author = env!("CARGO_PKG_AUTHORS");
+    let description = env!("CARGO_PKG_DESCRIPTION");
+
+    let matches = Command::new(name)
+        .version(version)
+        .author(author)
+        .about(description)
+        .arg(
+            Arg::new("files")
+                .help("Python files to analyze")
+                .required(true)
+                .num_args(1..)
+                .value_hint(clap::ValueHint::FilePath),
+        )
+        .get_matches();
+
+    // Get the list of files to analyze
+    let files: Vec<&str> = matches
+        .get_many::<String>("files")
+        .unwrap()
+        .map(|s| s.as_str())
+        .collect();
 
     // Process each file
-    for filename in &args[1..] {
+    for filename in files {
         match fs::read_to_string(filename) {
             Ok(source_code) => {
                 if let Err(e) = analyze_file(filename, &source_code) {
