@@ -205,6 +205,9 @@ fn analyze_function<'a>(
 ) {
     let func_info = functions.get(function_name).unwrap();
 
+    // Split source code into lines
+    let source_lines: Vec<&str> = source_code.lines().collect();
+
     // Check for unguarded dict accesses within the function
     let mut unguarded_accesses = Vec::new();
     find_unguarded_dict_accesses(func_info.node, &mut unguarded_accesses, source_code);
@@ -213,15 +216,45 @@ fn analyze_function<'a>(
         // Report warning for unguarded dict access
         for access_node in unguarded_accesses {
             if !is_within_keyerror_try_except(access_node, source_code) {
-                let line_number = access_node.start_position().row + 1;
+                let start_position = access_node.start_position();
+                let end_position = access_node.end_position();
+                let line_number = start_position.row + 1;
+                let column_start = start_position.column;
+                let column_end = end_position.column;
+
+                let line = source_lines.get(start_position.row).unwrap_or(&"");
                 if function_name != "<module>" {
                     println!(
-                        "{}:{}: {} Possible KeyError in function '{}'",
+                        "{}:{}:{}: {} Possible KeyError in function '{}'",
                         filename,
                         line_number,
+                        column_start + 1,
                         "Warning:".yellow().bold(),
                         function_name
                     );
+
+                    // Print the code line
+                    println!("{}|", line_number.to_string().blue());
+                    println!(
+                        "{}| {}",
+                        " ".repeat(line_number.to_string().len()).blue(),
+                        line
+                    );
+
+                    // Print the indicator line
+                    let indicator = format!(
+                        "{}{}",
+                        " ".repeat(column_start),
+                        "^".repeat(std::cmp::max(1, column_end - column_start))
+                    );
+                    println!(
+                        "{}| {}",
+                        " ".repeat(line_number.to_string().len()).blue(),
+                        indicator.bright_red()
+                    );
+
+                    // Add a blank line for better readability
+                    println!();
                 }
             }
         }
@@ -238,16 +271,23 @@ fn analyze_function<'a>(
         if let Some(called_func) = functions.get(&call.name) {
             let exceptions = &called_func.may_raise;
             if !exceptions.is_empty() && !is_within_keyerror_try_except(call.node, source_code) {
+                let start_position = call.node.start_position();
+                let end_position = call.node.end_position();
                 let line_number = call.node.start_position().row + 1;
+                let column_start = start_position.column;
+                let column_end = end_position.column;
                 let key = (line_number, call.name.clone());
 
                 // Only report if not already reported in the called function
                 if !reported_calls.contains(&key) && !called_func.reported_in_function.get() {
                     reported_calls.insert(key);
+
+                    let line = source_lines.get(start_position.row).unwrap_or(&"");
                     println!(
-                        "{}:{}: {} Possible {} not handled when calling '{}' in function '{}'",
+                        "{}:{}:{}: {} Possible {} not handled when calling '{}' in function '{}'",
                         filename,
                         line_number,
+                        column_start + 1,
                         "Warning:".yellow().bold(),
                         exceptions
                             .iter()
@@ -257,6 +297,29 @@ fn analyze_function<'a>(
                         call.name,
                         function_name
                     );
+
+                    // Print the code line
+                    println!("{}|", line_number.to_string().blue());
+                    println!(
+                        "{}| {}",
+                        " ".repeat(line_number.to_string().len()).blue(),
+                        line
+                    );
+
+                    // Print the indicator line
+                    let indicator = format!(
+                        "{}{}",
+                        " ".repeat(column_start),
+                        "^".repeat(std::cmp::max(1, column_end - column_start))
+                    );
+                    println!(
+                        "{}| {}",
+                        " ".repeat(line_number.to_string().len()).blue(),
+                        indicator.bright_red()
+                    );
+
+                    // Add a blank line for better readability
+                    println!();
                 }
             }
         }
