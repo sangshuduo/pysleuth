@@ -165,7 +165,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pywrong"
+name = "pysleuth"
 version = "0.1.1"
 dependencies = [
  "anyhow",

@@ -1,9 +1,9 @@
 [package]
-name = "pywrong"
+name = "pysleuth"
 version = "0.1.1"
 authors = ["Shuduo Sang <sangshuduo@gmail.com>"]
 edition = "2021"
-description = "A Python code linter written in Rust"
+description = "PySleuth is a Python code linter written in Rust"
 
 [dependencies]
 tree-sitter = "0.24.4"

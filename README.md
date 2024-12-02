@@ -1,2 +1,3 @@
-# pywrong
-Python [wrong] Code checker
+# PySleuth
+
+Hunging down your Python code errors with PySleuth.
