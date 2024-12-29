@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pysleuth"
+version = "0.1.2"
+description = "A tool to analyze Python code for potential error."
+authors = [
+    { name = "Shudou Sang", email = "sangshuduo@gmail.com" },
+]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.6"
+
+[project.urls]
+Repository = "https://github.com/sangshuduo/pysleuth"
+
+[project.scripts]
+pysleuth = "pysleuth.__main__:main"
