@@ -3,14 +3,15 @@ use pyo3::wrap_pyfunction;
 
 /// A simple function exposed to Python under the name `main`.
 #[pyfunction]
-fn main_py() -> PyResult<()> {
+fn run_command(_arg: String) -> PyResult<()> {
     // Your Rust logic here, for example:
-    println!("Hello from Rust!");
     run_main_logic().unwrap();
     // Return an empty Ok(()) to satisfy the PyResult<()> type.
     Ok(())
 }
 
+/// Example of a Python-callable function named `version_py`.
+/// In Python, you'll call it as `pysleuth.version_py()`.
 #[pyfunction]
 fn version_py() -> PyResult<String> {
     Ok(env!("CARGO_PKG_VERSION").to_string())
@@ -20,9 +21,7 @@ fn version_py() -> PyResult<String> {
 fn pysleuth(_py: Python, m: &PyModule) -> PyResult<()> {
     // Register the version_py function with the Python module.
     m.add_function(wrap_pyfunction!(version_py, m)?)?;
-    // Add the `main` function to the module.
-    // so that Python code can call `python_code_analyzer.main_py()`.
-    m.add_function(wrap_pyfunction!(main_py, m)?)?;
+    m.add_function(wrap_pyfunction!(run_command, m)?)?;
 
     // Return Ok(()) to satisfy the PyResult<()> return type
     Ok(())

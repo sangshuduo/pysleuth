@@ -6,3 +6,5 @@ target/
 /target
 .ai-commit.json
 venv
+__pycache__
+*.so
