@@ -4,3 +4,7 @@ target/
 # Added by cargo
 
 /target
+.ai-commit.json
+venv
+__pycache__
+*.so
