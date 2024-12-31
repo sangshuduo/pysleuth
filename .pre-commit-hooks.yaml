@@ -1,0 +1,7 @@
+- id: pysleuth
+  name: pysleuth
+  entry: pysleuth
+  language: python
+  types: [python]
+  pass_filenames: true
+  description: "Check Python code for KeyError issues using pysleuth"
