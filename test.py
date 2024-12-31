@@ -20,4 +20,4 @@ try:
 except KeyError:
     print("Handled KeyError in main")
 
-unhandled_function()  # Should produce a warning
+unhandled_function()
