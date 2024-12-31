@@ -1,3 +1,4 @@
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
@@ -5,9 +6,10 @@ use pyo3::wrap_pyfunction;
 #[pyfunction]
 fn run_command(_arg: String) -> PyResult<()> {
     // Your Rust logic here, for example:
-    run_main_logic().unwrap();
-    // Return an empty Ok(()) to satisfy the PyResult<()> type.
-    Ok(())
+    match run_main_logic() {
+        Ok(_) => Ok(()),
+        Err(e) => Err(PyRuntimeError::new_err(format!("{}", e))),
+    }
 }
 
 /// Example of a Python-callable function named `version_py`.
@@ -63,21 +65,30 @@ fn run_main_logic() -> Result<()> {
         .map(|s| s.as_str())
         .collect();
 
+    let mut found_errors = false;
     // Process each file
     for filename in files {
         match fs::read_to_string(filename) {
-            Ok(source_code) => {
-                if let Err(e) = analyze_file(filename, &source_code) {
-                    eprintln!("Error analyzing file '{}': {}", filename, e);
+            Ok(source_code) => match analyze_file(filename, &source_code) {
+                Ok(()) => {
+                    println!("No issues found in '{}'", filename);
                 }
-            }
+                Err(e) => {
+                    eprintln!("Analyzing file '{}': {}", filename, e);
+                    found_errors = true;
+                }
+            },
             Err(e) => {
                 eprintln!("Error reading file '{}': {}", filename, e);
             }
         }
     }
 
-    Ok(())
+    if found_errors {
+        Err(anyhow::anyhow!(""))
+    } else {
+        Ok(())
+    }
 }
 
 fn analyze_file(filename: &str, source_code: &str) -> Result<()> {
@@ -110,18 +121,34 @@ fn analyze_file(filename: &str, source_code: &str) -> Result<()> {
 
     // Analyze each function
     let mut reported_calls = HashSet::new();
+
+    let mut encountered_errors = false;
+
     for func_name in functions.keys() {
-        analyze_function(
+        match analyze_function(
             func_name,
             functions[func_name].node,
             &functions,
             source_code,
             filename,
             &mut reported_calls,
-        );
+        ) {
+            Ok(()) => {}
+            Err(e) => {
+                eprintln!("Potential issue(s) in function '{}': {:#}", func_name, e);
+                encountered_errors = true;
+            }
+        }
     }
 
-    Ok(())
+    if encountered_errors {
+        Err(anyhow::anyhow!(
+            "Potential issue(s) found in '{}'",
+            filename
+        ))
+    } else {
+        Ok(())
+    }
 }
 
 struct FunctionInfo<'a> {
@@ -252,7 +279,7 @@ fn analyze_function<'a>(
     source_code: &str,
     filename: &str,
     reported_calls: &mut HashSet<(usize, String)>,
-) {
+) -> Result<()> {
     let func_info = functions.get(function_name).unwrap();
 
     // Split source code into lines
@@ -261,6 +288,8 @@ fn analyze_function<'a>(
     // Check for unguarded dict accesses within the function
     let mut unguarded_accesses = Vec::new();
     find_unguarded_dict_accesses(func_info.node, &mut unguarded_accesses, source_code);
+
+    let mut found_warnings = false;
 
     if !unguarded_accesses.is_empty() {
         // Report warning for unguarded dict access
@@ -306,6 +335,7 @@ fn analyze_function<'a>(
                     // Add a blank line for better readability
                     println!();
                 }
+                found_warnings = true;
             }
         }
 
@@ -370,10 +400,18 @@ fn analyze_function<'a>(
 
                     // Add a blank line for better readability
                     println!();
+
+                    found_warnings = true;
                 }
             }
         }
     }
+
+    if found_warnings {
+        return Err(anyhow::anyhow!("Warnings found in '{}'", function_name));
+    }
+
+    Ok(())
 }
 
 fn find_unguarded_dict_accesses<'a>(

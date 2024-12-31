@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pysleuth"
-version = "0.1.2"
+version = "0.1.3"
 description = "A tool to analyze Python code for potential error."
 authors = [
     { name = "Shudou Sang", email = "sangshuduo@gmail.com" },

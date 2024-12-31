@@ -7,7 +7,12 @@ def main():
     else:
         # Example: pass everything except the script name to Rust:
         args = " ".join(sys.argv[1:])
-        run_command(args)
+        try:
+            run_command(args)
+        except Exception as e:
+            sys.exit(1)
+        else:
+            sys.exit(0)
 
 if __name__ == "__main__":
     main()
